@@ -15,6 +15,9 @@
 		41833A082969295F006A14E5 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 41833A062969295F006A14E5 /* LaunchScreen.storyboard */; };
 		41833A11296929D1006A14E5 /* SPRuler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41833A10296929D1006A14E5 /* SPRuler.swift */; };
 		41833A1329692C99006A14E5 /* SPRulerLineCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41833A1229692C99006A14E5 /* SPRulerLineCell.swift */; };
+		41833A1629695915006A14E5 /* TimelineRuler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41833A1529695915006A14E5 /* TimelineRuler.swift */; };
+		41833A1829695A4A006A14E5 /* TimelineCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41833A1729695A4A006A14E5 /* TimelineCell.swift */; };
+		41833A1B29696A95006A14E5 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41833A1A29696A95006A14E5 /* TimelineView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +31,9 @@
 		41833A092969295F006A14E5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		41833A10296929D1006A14E5 /* SPRuler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SPRuler.swift; sourceTree = "<group>"; };
 		41833A1229692C99006A14E5 /* SPRulerLineCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPRulerLineCell.swift; sourceTree = "<group>"; };
+		41833A1529695915006A14E5 /* TimelineRuler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineRuler.swift; sourceTree = "<group>"; };
+		41833A1729695A4A006A14E5 /* TimelineCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineCell.swift; sourceTree = "<group>"; };
+		41833A1A29696A95006A14E5 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +66,8 @@
 		418339FA2969295C006A14E5 /* SPRuler */ = {
 			isa = PBXGroup;
 			children = (
+				41833A1929696A7E006A14E5 /* TimelineView */,
+				41833A14296958C4006A14E5 /* TimelineRuler */,
 				41833A0F296929B3006A14E5 /* Source */,
 				418339FB2969295C006A14E5 /* AppDelegate.swift */,
 				418339FD2969295C006A14E5 /* SceneDelegate.swift */,
@@ -79,6 +87,23 @@
 				41833A1229692C99006A14E5 /* SPRulerLineCell.swift */,
 			);
 			path = Source;
+			sourceTree = "<group>";
+		};
+		41833A14296958C4006A14E5 /* TimelineRuler */ = {
+			isa = PBXGroup;
+			children = (
+				41833A1529695915006A14E5 /* TimelineRuler.swift */,
+				41833A1729695A4A006A14E5 /* TimelineCell.swift */,
+			);
+			path = TimelineRuler;
+			sourceTree = "<group>";
+		};
+		41833A1929696A7E006A14E5 /* TimelineView */ = {
+			isa = PBXGroup;
+			children = (
+				41833A1A29696A95006A14E5 /* TimelineView.swift */,
+			);
+			path = TimelineView;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -153,10 +178,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				41833A002969295C006A14E5 /* ViewController.swift in Sources */,
+				41833A1829695A4A006A14E5 /* TimelineCell.swift in Sources */,
 				41833A11296929D1006A14E5 /* SPRuler.swift in Sources */,
 				418339FC2969295C006A14E5 /* AppDelegate.swift in Sources */,
 				418339FE2969295C006A14E5 /* SceneDelegate.swift in Sources */,
 				41833A1329692C99006A14E5 /* SPRulerLineCell.swift in Sources */,
+				41833A1629695915006A14E5 /* TimelineRuler.swift in Sources */,
+				41833A1B29696A95006A14E5 /* TimelineView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

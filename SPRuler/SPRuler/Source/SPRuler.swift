@@ -15,6 +15,7 @@ public protocol SPRulerDataSource: AnyObject {
 
 public protocol SPRulerDelegate: AnyObject {
     func spRuler(_ ruler: SPRuler, didSelectItemAtIndex index: Int)
+    func spRulerDidScroll(_ rulerScrollView: UIScrollView)
 }
 
 public struct SPRulerConfiguration {
@@ -85,16 +86,18 @@ public struct SPRulerConfiguration {
     public var metrics: Metrics = .default
     /// Enabling Haptic Feedbacks to Supporting devices. Default value is `true`.
     public var isHapticsEnabled: Bool = true
+    public var isPrecisionScrollEnabled: Bool = true
     
     static var `default`: SPRulerConfiguration { SPRulerConfiguration() }
     
-    public init(scrollDirection: SPRulerConfiguration.Direction = .horizontal, alignment: SPRulerConfiguration.Alignment = .end, lineSpacing: CGFloat = 10, lineAndLabelSpacing: CGFloat = 6, metrics: SPRulerConfiguration.Metrics = .default, isHapticsEnabled: Bool = true) {
+    public init(scrollDirection: SPRulerConfiguration.Direction = .horizontal, alignment: SPRulerConfiguration.Alignment = .end, lineSpacing: CGFloat = 10, lineAndLabelSpacing: CGFloat = 6, metrics: SPRulerConfiguration.Metrics = .default, isHapticsEnabled: Bool = true, isPrecisionScrollEnabled: Bool = true) {
         self.scrollDirection = scrollDirection
         self.alignment = alignment
         self.lineSpacing = lineSpacing
         self.lineAndLabelSpacing = lineAndLabelSpacing
         self.metrics = metrics
         self.isHapticsEnabled = isHapticsEnabled
+        self.isPrecisionScrollEnabled = isPrecisionScrollEnabled
     }
     
     
@@ -151,7 +154,7 @@ public class SPRuler: UIView {
     
     // MARK: - UI Elements
     
-    private lazy var collectionView: UICollectionView = {
+    public lazy var collectionView: UICollectionView = {
         let cv = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
         cv.backgroundColor = .clear
         cv.showsHorizontalScrollIndicator = false
@@ -163,7 +166,7 @@ public class SPRuler: UIView {
         return cv
     }()
     
-    private lazy var indicatorLabel: UILabel = {
+    public lazy var indicatorLabel: UILabel = {
         let lable = UILabel()
         lable.font = highlightFont
         lable.textColor = highlightLineColor
@@ -171,13 +174,13 @@ public class SPRuler: UIView {
         return lable
     }()
     
-    private lazy var indicatorLabelGradientView: UIView = {
+    public lazy var indicatorLabelGradientView: UIView = {
         let view = UIView()
         return view
     }()
-    private lazy var indicatorLabelGradient = CAGradientLayer()
+    public lazy var indicatorLabelGradient = CAGradientLayer()
     
-    private lazy var indicatorLine: UIView = {
+    public lazy var indicatorLine: UIView = {
         let view = UIView()
         view.backgroundColor = highlightLineColor
         return view
@@ -225,10 +228,10 @@ public class SPRuler: UIView {
             switch configuration.alignment {
             case .start:
                 indicatorLine.frame.origin.y = 0
-                indicatorLabel.frame.origin.y = indicatorLine.frame.origin.y + indicatorLine.frame.size.height + configuration.lineAndLabelSpacing
+                indicatorLabel.frame.origin.y = indicatorLine.frame.origin.y + indicatorLine.frame.size.height + configuration.lineAndLabelSpacing + 20
             case .end:
                 indicatorLine.frame.origin.y = bounds.height - indicatorLine.frame.size.height
-                indicatorLabel.frame.origin.y = indicatorLine.frame.origin.y - configuration.lineAndLabelSpacing - indicatorLabel.frame.size.height
+                indicatorLabel.frame.origin.y = indicatorLine.frame.origin.y - configuration.lineAndLabelSpacing - indicatorLabel.frame.size.height - 20
             }
             
         } else {
@@ -239,9 +242,9 @@ public class SPRuler: UIView {
             switch configuration.alignment {
             case .start:
                 indicatorLine.frame.origin.x = 0
-                indicatorLabel.frame.origin.x = configuration.metrics.fullLineSize + configuration.lineAndLabelSpacing
+                indicatorLabel.frame.origin.x = configuration.metrics.fullLineSize + configuration.lineAndLabelSpacing + 20
             case .end:
-                indicatorLabel.frame.origin.x = configuration.metrics.fullLineSize + configuration.lineAndLabelSpacing
+                indicatorLabel.frame.origin.x = configuration.metrics.fullLineSize + configuration.lineAndLabelSpacing + 20
                 indicatorLine.frame.origin.x = indicatorLabel.frame.origin.x
                 
             }
@@ -345,8 +348,9 @@ extension SPRuler: UIScrollViewDelegate {
             let roundedIndex = round((offset.y + contentInset.top) / cellWidthIncludingSpacing)
             offset = CGPoint(x: -contentInset.left, y: roundedIndex * cellWidthIncludingSpacing - contentInset.top)
         }
-        
-        targetContentOffset.pointee = offset
+        if self.configuration.isPrecisionScrollEnabled {
+            targetContentOffset.pointee = offset
+        }
     }
     
     public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
@@ -377,6 +381,7 @@ extension SPRuler: UIScrollViewDelegate {
             indicatorLabel.text = dataSource?.spRuler(self, highlightTitleForIndex: index)
             indicatorLabel.sizeToFit()
         }
+        delegate?.spRulerDidScroll(scrollView)
     }
     
     public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
