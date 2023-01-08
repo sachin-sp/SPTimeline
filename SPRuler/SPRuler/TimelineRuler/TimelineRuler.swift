@@ -27,6 +27,23 @@ class TimelineRuler: SPRuler {
         indicatorLine.isHidden = true
     }
     
+    func setupRuler(minValue: Int, defaultValue: Int, maxValue: Int, lineSpacing: CGFloat) {
+        let rulerMetrics = SPRulerConfiguration.Metrics(
+            minimumValue: minValue,
+            defaultValue: defaultValue,
+            maximumValue: maxValue,
+            divisions: 12,
+            fullLineSize: 40,
+            midLineSize: 32,
+            smallLineSize: 22)
+        configuration = SPRulerConfiguration(scrollDirection: .horizontal, alignment: .end, lineSpacing: lineSpacing, metrics: rulerMetrics, isPrecisionScrollEnabled: false)
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        let count = configuration.metrics.maximumValue - configuration.metrics.minimumValue
+        return (count) + 1
+    }
+    
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TimelineCell.cellId, for: indexPath) as! TimelineCell // swiftlint:disable:this force_cast
         let text = dataSource?.spRuler(self, titleForIndex: indexPath.row)

@@ -7,16 +7,25 @@
 
 import UIKit
 
+let secondsInADay: Int64 = 86400
+let secondsInAnHour: Int64 = 3600
+let secondsInAMinute: Int64 = 60
+let hoursInADay: Int64 = 24
+let minutesInAnHour: Int64 = 60
+
 class TimelineView: UIView {
     
     var rulerView = TimelineRuler()
     
-    var minVal = 1669833000000.toSeconds()
-    var defaultVal = 1669833180000.toSeconds()
-    var maxVal = 1669833300000.toSeconds()
+    var startTime = 1669833000000
+    var endTime = 1671474600000
     
-    let tickDuration:CGFloat = 6
-    let lineSpacing: CGFloat = 20
+    var tickDuration:CGFloat = 7200
+    var lineSpacing: CGFloat = 20
+    
+    var minValue = 0
+    var defaultValue = 0
+    var maxValue = 0
     
     private lazy var centerLineIndicator: UIView = {
         let v = UIView()
@@ -73,16 +82,8 @@ class TimelineView: UIView {
             rulerView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8)
         ])
         rulerView.layoutIfNeeded()
+        configureDaysTimeline()
         
-        let rulerMetrics = SPRulerConfiguration.Metrics(
-            minimumValue: self.minVal,
-            defaultValue: self.defaultVal,
-            maximumValue: self.maxVal,
-            divisions: 10,
-            fullLineSize: 40,
-            midLineSize: 32,
-            smallLineSize: 22)
-        rulerView.configuration = SPRulerConfiguration(scrollDirection: .horizontal, alignment: .end, lineSpacing: self.lineSpacing, metrics: rulerMetrics, isPrecisionScrollEnabled: false)
         rulerView.font = UIFont(name: "AmericanTypewriter-Bold", size: 12)!
         rulerView.highlightFont = UIFont(name: "AmericanTypewriter-Bold", size: 18)!
         rulerView.dataSource = self
@@ -100,28 +101,69 @@ class TimelineView: UIView {
         ])
     }
     
-    func changeRange() {
+    func configureDaysTimeline() {
+        let startDate = Date.init(milliseconds: Int64(self.startTime)).toLocalTime()
+        let endDate = Date.init(milliseconds: Int64(self.endTime)).toLocalTime()
+        let elapsed = endDate.timeIntervalSince(startDate)
+        let tick = Int(self.tickDuration)
+        self.maxValue = Int(Int(elapsed) / tick)
+        self.defaultValue = (self.maxValue / 2)
+        self.minValue = 0
+        rulerView.setupRuler(minValue: self.minValue, defaultValue: self.defaultValue, maxValue: self.maxValue, lineSpacing: self.lineSpacing)
+    }
+    
+    func pagingateDaysForward() {
+        self.defaultValue = self.maxValue
         
-        let min = self.minVal - 50
-        let def = self.minVal
-        let max = self.maxVal
+        let e = self.endTime + (20 * Int(secondsInADay)).toMiliSeconds()
+        self.endTime = e
         
-        self.minVal = min
+        let startDate = Date.init(milliseconds: Int64(self.startTime)).toLocalTime()
+        let endDate = Date.init(milliseconds: Int64(self.endTime)).toLocalTime()
+        let elapsed = endDate.timeIntervalSince(startDate)
+        let tick = Int(self.tickDuration)
+        self.maxValue = Int(Int(elapsed) / tick)
         
-        let rulerMetrics = SPRulerConfiguration.Metrics(
-            minimumValue: min,
-            defaultValue: def,
-            maximumValue: max,
-            divisions: 10,
-            fullLineSize: 40,
-            midLineSize: 32,
-            smallLineSize: 22)
-        rulerView.configuration.metrics = rulerMetrics
+        rulerView.setupRuler(minValue: self.minValue, defaultValue: self.defaultValue, maxValue: self.maxValue, lineSpacing: self.lineSpacing)
+    }
+    
+    func paginateDaysReverse() {
+        self.defaultValue = (self.maxValue / 2) + 6
+        
+        let s = self.startTime - (20 * Int(secondsInADay)).toMiliSeconds()
+        self.startTime = s
+        
+        let startDate = Date.init(milliseconds: Int64(self.startTime)).toLocalTime()
+        let endDate = Date.init(milliseconds: Int64(self.endTime)).toLocalTime()
+        let elapsed = endDate.timeIntervalSince(startDate)
+        let tick = Int(self.tickDuration)
+        self.maxValue = Int(Int(elapsed) / tick)
+        
+        rulerView.setupRuler(minValue: self.minValue, defaultValue: self.defaultValue, maxValue: self.maxValue, lineSpacing: self.lineSpacing)
     }
 }
 
 extension TimelineView: SPRulerDelegate {
     func spRulerDidScroll(_ rulerScrollView: UIScrollView) {
+        
+        let offset = rulerScrollView.contentOffset
+        let contentInset = rulerScrollView.contentInset
+        let index: Int
+        let itemsCount = self.rulerView.collectionView.numberOfItems(inSection: 0) - 1
+        if self.rulerView.configuration.isHorizontal {
+            let roundedIndex = round((offset.x + contentInset.left) / (lineSpacing + 1))
+            index = max(0, min(itemsCount, Int(roundedIndex)))
+        } else {
+            let roundedIndex = round((offset.y + contentInset.top) / (lineSpacing + 1))
+            index = max(0, min(itemsCount, Int(roundedIndex)))
+        }
+        
+        if index == self.rulerView.configuration.metrics.maximumValue {
+            pagingateDaysForward()
+        }
+        if index == self.rulerView.configuration.metrics.minimumValue {
+            paginateDaysReverse()
+        }
         
         let centerX = rulerScrollView.frame.width / 2
         let x = (rulerScrollView.contentOffset.x + (centerX)) // / scale
@@ -130,7 +172,7 @@ extension TimelineView: SPRulerDelegate {
         let k = (timelineCellHalfWidth) / CGFloat(tickHalfDurationInSeconds)
         let secondsInt = Int(x/k)
         let miliSeconds = Int64(secondsInt).toMiliSeconds()
-        let date = Int64(self.minVal.toMiliSeconds()) + miliSeconds
+        let date = Int64(self.startTime) + miliSeconds
         currentTime.text = date.toDayTimelineCurrentTime()
     }
     
@@ -142,18 +184,15 @@ extension TimelineView: SPRulerDelegate {
 extension TimelineView: SPRulerDataSource {
     func spRuler(_ ruler: SPRuler, titleForIndex index: Int) -> String? {
         guard index % ruler.configuration.metrics.divisions == 0 else { return nil }
-        let tick = Int(self.tickDuration)
-        let t = (index * tick + Int(minVal)).toMiliSeconds()
-        let minSec = Int64(t).toMinutesSeconds()
+        let tick = Int(self.tickDuration).toMiliSeconds()
+        let time = (index * tick + Int(self.startTime))
+        let minSec = Int64(time).toDayTimelineDay()
         return minSec
     }
     
     func spRuler(_ ruler: SPRuler, highlightTitleForIndex index: Int) -> String? {
-        if index % self.minVal == 0 {
-            changeRange()
-        }
         let tick = Int(self.tickDuration)
-        let time = (index * tick + Int(minVal)).toMiliSeconds()
+        let time = (index * tick + Int(self.startTime)).toMiliSeconds()
         let minSec = Int64(time).toDayTimelineCurrentTime()
         let text = minSec
         currentTime.text = text
@@ -180,7 +219,7 @@ extension Int {
 extension Int64 {
     
     func toMonth() -> String {
-        let date = Date.init(milliseconds: self).toLocalTime()
+        let date = Date.init(milliseconds: self)
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone.current
         formatter.dateFormat = "MMMM"
@@ -188,7 +227,7 @@ extension Int64 {
     }
     
     func toDay() -> String {
-        let date = Date.init(milliseconds: self).toLocalTime()
+        let date = Date.init(milliseconds: self)
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone.current
         formatter.dateFormat = "dd"
@@ -196,7 +235,7 @@ extension Int64 {
     }
     
     func toYear() -> String {
-        let date = Date.init(milliseconds: self).toLocalTime()
+        let date = Date.init(milliseconds: self)
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone.current
         formatter.dateFormat = "yyyy"
@@ -205,7 +244,7 @@ extension Int64 {
     
     func toDayTimelineCurrentTime() -> String {
         var dateStr = ""
-        let date = Date.init(milliseconds: self).toLocalTime()
+        let date = Date.init(milliseconds: self)
         let daySuffix = date.daySuffix()
         
         let month = self.toMonth()
@@ -220,7 +259,7 @@ extension Int64 {
     
     func toDayTimelineDay() -> String {
         var dateStr = ""
-        let date = Date.init(milliseconds: self).toLocalTime()
+        let date = Date.init(milliseconds: self)
         let daySuffix = date.daySuffix()
         let day = self.toDay()
         dateStr = "\(day)\(daySuffix)"
@@ -228,7 +267,7 @@ extension Int64 {
     }
     
     func toHoursMinutesSeconds() -> String {
-        let date = Date.init(milliseconds: self).toLocalTime()
+        let date = Date.init(milliseconds: self)
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone.current
         formatter.dateFormat = "HH:mm:ss a"
@@ -236,7 +275,7 @@ extension Int64 {
     }
     
     func toHoursMinutes() -> String {
-        let date = Date.init(milliseconds: self).toLocalTime()
+        let date = Date.init(milliseconds: self)
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone.current
         formatter.dateFormat = "HH:mm"
@@ -244,7 +283,7 @@ extension Int64 {
     }
     
     func toDaysHoursMinutes() -> String {
-        let date = Date.init(milliseconds: self).toLocalTime()
+        let date = Date.init(milliseconds: self)
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone.current
         formatter.dateFormat = "dd HH"
@@ -252,15 +291,14 @@ extension Int64 {
     }
     
     func toMinutesSeconds() -> String {
-        let date = Date.init(milliseconds: self).toLocalTime()
+        let date = Date.init(milliseconds: self)
         let formatter = DateFormatter()
-        formatter.timeZone = TimeZone.current
         formatter.dateFormat = "mm:ss"
         return formatter.string(from: date)
     }
     
     func toSecondsString() -> String {
-        let date = Date.init(milliseconds: self).toLocalTime()
+        let date = Date.init(milliseconds: self)
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone.current
         formatter.dateFormat = "ss"
