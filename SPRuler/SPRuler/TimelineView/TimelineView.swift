@@ -155,7 +155,7 @@ class TimelineView: UIView {
     }
     
     func pagingateForward() {
-        self.defaultValue = self.maxValue
+        let newDefaultValue = self.maxValue
         
         var e = 0
         
@@ -177,10 +177,13 @@ class TimelineView: UIView {
         self.maxValue = Int(Int(elapsed) / tick)
         
         rulerView.setupRuler(minimumValue: self.minValue,
-                             defaultValue: self.defaultValue,
+                             defaultValue: newDefaultValue,
                              maximumValue: self.maxValue,
                              divisions: self.divisions,
                              lineSpacing: self.lineSpacing)
+        
+        print("Max Value ============== \(self.maxValue)")
+        print("Default Value ============== \(self.defaultValue)")
         
     }
     
@@ -209,6 +212,9 @@ class TimelineView: UIView {
                              maximumValue: self.maxValue,
                              divisions: self.divisions,
                              lineSpacing: self.lineSpacing)
+        
+        print("Max Value ============== \(self.maxValue)")
+        print("Default Value ============== \(self.defaultValue)")
     }
 }
 
