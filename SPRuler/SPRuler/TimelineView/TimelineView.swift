@@ -13,15 +13,28 @@ let secondsInAMinute: Int64 = 60
 let hoursInADay: Int64 = 24
 let minutesInAnHour: Int64 = 60
 
+let secondsTimelineTickDuration:Int64 = 1
+let minutesTimelineTickDuration = secondsInAMinute / 10
+let daysTimelineTickDuration = secondsInAnHour * 2
+
+enum TimelineSpan {
+    case seconds
+    case minutes
+    case days
+}
+
 class TimelineView: UIView {
     
     var rulerView = TimelineRuler()
     
-    var startTime = 1669833000000
-    var endTime = 1671474600000
+    var timelineSpan: TimelineSpan = .seconds
     
-    var tickDuration:CGFloat = 7200
+    var startTime = 0
+    var endTime = 0
+    
+    var tickDuration:CGFloat = 0
     var lineSpacing: CGFloat = 20
+    var divisions = 0
     
     var minValue = 0
     var defaultValue = 0
@@ -44,14 +57,16 @@ class TimelineView: UIView {
         return label
     }()
     
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    init(startTime: Int, endTime: Int, timelineSpan: TimelineSpan) {
+        self.startTime = startTime
+        self.endTime = endTime
+        self.timelineSpan = timelineSpan
+        super.init(frame: .zero)
         configureViews()
     }
     
     required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        configureViews()
+        fatalError("init(coder:) has not been implemented")
     }
     
     private func configureViews() {
@@ -82,7 +97,7 @@ class TimelineView: UIView {
             rulerView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8)
         ])
         rulerView.layoutIfNeeded()
-        configureDaysTimeline()
+        configureTimeline()
         
         rulerView.font = UIFont(name: "AmericanTypewriter-Bold", size: 12)!
         rulerView.highlightFont = UIFont(name: "AmericanTypewriter-Bold", size: 18)!
@@ -101,21 +116,58 @@ class TimelineView: UIView {
         ])
     }
     
-    func configureDaysTimeline() {
+    func configureTimeline() {
+        
+        switch self.timelineSpan {
+        case .seconds:
+            self.tickDuration = CGFloat(secondsTimelineTickDuration)
+            self.divisions = 10
+        case .minutes:
+            self.tickDuration = CGFloat(minutesTimelineTickDuration)
+            self.divisions = 10
+        case .days:
+            self.tickDuration = CGFloat(daysTimelineTickDuration)
+            self.divisions = 12
+        }
+        
         let startDate = Date.init(milliseconds: Int64(self.startTime)).toLocalTime()
         let endDate = Date.init(milliseconds: Int64(self.endTime)).toLocalTime()
         let elapsed = endDate.timeIntervalSince(startDate)
         let tick = Int(self.tickDuration)
         self.maxValue = Int(Int(elapsed) / tick)
-        self.defaultValue = (self.maxValue / 2)
+        self.defaultValue = (self.maxValue)
+        
+        switch self.timelineSpan {
+        case .seconds:
+            self.defaultValue += 0
+        case .minutes:
+            self.defaultValue += 0
+        case .days:
+            self.defaultValue += 12
+        }
+        
         self.minValue = 0
-        rulerView.setupRuler(minValue: self.minValue, defaultValue: self.defaultValue, maxValue: self.maxValue, lineSpacing: self.lineSpacing)
+        rulerView.setupRuler(minimumValue: self.minValue,
+                             defaultValue: self.defaultValue,
+                             maximumValue: self.maxValue,
+                             divisions: self.divisions,
+                             lineSpacing: self.lineSpacing)
     }
     
-    func pagingateDaysForward() {
+    func pagingateForward() {
         self.defaultValue = self.maxValue
         
-        let e = self.endTime + (20 * Int(secondsInADay)).toMiliSeconds()
+        var e = 0
+        
+        switch self.timelineSpan {
+        case .seconds:
+            e = self.endTime + (5 * Int(secondsInAMinute)).toMiliSeconds()
+        case .minutes:
+            e = self.endTime + (5 * Int(secondsInAMinute)).toMiliSeconds()
+        case .days:
+            e = self.endTime + (30 * Int(secondsInADay)).toMiliSeconds()
+        }
+        
         self.endTime = e
         
         let startDate = Date.init(milliseconds: Int64(self.startTime)).toLocalTime()
@@ -124,13 +176,26 @@ class TimelineView: UIView {
         let tick = Int(self.tickDuration)
         self.maxValue = Int(Int(elapsed) / tick)
         
-        rulerView.setupRuler(minValue: self.minValue, defaultValue: self.defaultValue, maxValue: self.maxValue, lineSpacing: self.lineSpacing)
+        rulerView.setupRuler(minimumValue: self.minValue,
+                             defaultValue: self.defaultValue,
+                             maximumValue: self.maxValue,
+                             divisions: self.divisions,
+                             lineSpacing: self.lineSpacing)
+        
     }
     
-    func paginateDaysReverse() {
-        self.defaultValue = (self.maxValue / 2) + 6
+    func paginateReverse() {
+        var s = 0
         
-        let s = self.startTime - (20 * Int(secondsInADay)).toMiliSeconds()
+        switch self.timelineSpan {
+        case .seconds:
+            s = self.startTime - (5 * Int(secondsInAMinute)).toMiliSeconds()
+        case .minutes:
+            s = self.startTime - (5 * Int(secondsInAMinute)).toMiliSeconds()
+        case .days:
+            s = self.startTime - (30 * Int(secondsInADay)).toMiliSeconds()
+        }
+        
         self.startTime = s
         
         let startDate = Date.init(milliseconds: Int64(self.startTime)).toLocalTime()
@@ -139,7 +204,11 @@ class TimelineView: UIView {
         let tick = Int(self.tickDuration)
         self.maxValue = Int(Int(elapsed) / tick)
         
-        rulerView.setupRuler(minValue: self.minValue, defaultValue: self.defaultValue, maxValue: self.maxValue, lineSpacing: self.lineSpacing)
+        rulerView.setupRuler(minimumValue: self.minValue,
+                             defaultValue: self.defaultValue,
+                             maximumValue: self.maxValue,
+                             divisions: self.divisions,
+                             lineSpacing: self.lineSpacing)
     }
 }
 
@@ -159,10 +228,10 @@ extension TimelineView: SPRulerDelegate {
         }
         
         if index == self.rulerView.configuration.metrics.maximumValue {
-            pagingateDaysForward()
+            pagingateForward()
         }
         if index == self.rulerView.configuration.metrics.minimumValue {
-            paginateDaysReverse()
+            paginateReverse()
         }
         
         let centerX = rulerScrollView.frame.width / 2
@@ -186,8 +255,18 @@ extension TimelineView: SPRulerDataSource {
         guard index % ruler.configuration.metrics.divisions == 0 else { return nil }
         let tick = Int(self.tickDuration).toMiliSeconds()
         let time = (index * tick + Int(self.startTime))
-        let minSec = Int64(time).toDayTimelineDay()
-        return minSec
+        var timeString = ""
+        
+        switch self.timelineSpan {
+        case .seconds:
+            timeString = Int64(time).toSecondsString()
+        case .minutes:
+            timeString = Int64(time).toMinutesSeconds()
+        case .days:
+            timeString = Int64(time).toDayTimelineDay()
+        }
+        
+        return timeString
     }
     
     func spRuler(_ ruler: SPRuler, highlightTitleForIndex index: Int) -> String? {

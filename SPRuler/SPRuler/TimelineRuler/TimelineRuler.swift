@@ -27,12 +27,16 @@ class TimelineRuler: SPRuler {
         indicatorLine.isHidden = true
     }
     
-    func setupRuler(minValue: Int, defaultValue: Int, maxValue: Int, lineSpacing: CGFloat) {
+    func setupRuler(minimumValue: Int,
+                    defaultValue: Int,
+                    maximumValue: Int,
+                    divisions: Int,
+                    lineSpacing: CGFloat) {
         let rulerMetrics = SPRulerConfiguration.Metrics(
-            minimumValue: minValue,
+            minimumValue: minimumValue,
             defaultValue: defaultValue,
-            maximumValue: maxValue,
-            divisions: 12,
+            maximumValue: maximumValue,
+            divisions: divisions,
             fullLineSize: 40,
             midLineSize: 32,
             smallLineSize: 22)
