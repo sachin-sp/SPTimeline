@@ -181,10 +181,6 @@ class TimelineView: UIView {
                              maximumValue: self.maxValue,
                              divisions: self.divisions,
                              lineSpacing: self.lineSpacing)
-        
-        print("Max Value ============== \(self.maxValue)")
-        print("Default Value ============== \(self.defaultValue)")
-        
     }
     
     func paginateReverse() {
@@ -212,9 +208,6 @@ class TimelineView: UIView {
                              maximumValue: self.maxValue,
                              divisions: self.divisions,
                              lineSpacing: self.lineSpacing)
-        
-        print("Max Value ============== \(self.maxValue)")
-        print("Default Value ============== \(self.defaultValue)")
     }
 }
 
