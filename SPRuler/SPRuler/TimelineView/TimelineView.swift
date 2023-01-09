@@ -25,20 +25,20 @@ enum TimelineSpan {
 
 class TimelineView: UIView {
     
-    var rulerView = TimelineRuler()
+    private var rulerView = TimelineRuler()
     
-    var timelineSpan: TimelineSpan = .seconds
+    private var timelineSpan: TimelineSpan = .seconds
     
-    var startTime = 0
-    var endTime = 0
+    private var startTime = 0
+    private var endTime = 0
     
-    var tickDuration:CGFloat = 0
-    var lineSpacing: CGFloat = 20
-    var divisions = 0
+    private var tickDuration:CGFloat = 0
+    private var lineSpacing: CGFloat = 20
+    private var divisions = 0
     
-    var minimumValue = 0
-    var defaultValue = 0
-    var maximumValue = 0
+    private var minimumValue = 0
+    private var defaultValue = 0
+    private var maximumValue = 0
     
     var currentTime: ((Int64) -> Void)?
     var touchesEnded: ((Bool) -> Void)?
@@ -85,7 +85,7 @@ class TimelineView: UIView {
         rulerView.collectionView.addGestureRecognizer(panGestureRecognizer)
     }
     
-    func setupCurrentTimeLabel() {
+    private func setupCurrentTimeLabel() {
         addSubview(currentTimeLabel)
         
         NSLayoutConstraint.activate([
@@ -96,7 +96,7 @@ class TimelineView: UIView {
         ])
     }
     
-    func setupRuler() {
+    private func setupRuler() {
         addSubview(rulerView)
         rulerView.translatesAutoresizingMaskIntoConstraints = false
         
@@ -127,7 +127,7 @@ class TimelineView: UIView {
         ])
     }
     
-    func configureTimeline() {
+    private func configureTimeline() {
         
         switch self.timelineSpan {
         case .seconds:
@@ -165,7 +165,7 @@ class TimelineView: UIView {
                              lineSpacing: self.lineSpacing)
     }
     
-    func paginateForward() {
+    private func paginateForward() {
         let newDefaultValue = self.maximumValue
         
         var newEndDate = 0
@@ -194,7 +194,7 @@ class TimelineView: UIView {
                              lineSpacing: self.lineSpacing)
     }
     
-    func paginateBackward() {
+    private func paginateBackward() {
         var newStartTime = 0
         
         switch self.timelineSpan {
@@ -221,24 +221,9 @@ class TimelineView: UIView {
                              lineSpacing: self.lineSpacing)
     }
     
-    @objc private func didPan(_ sender: UIPanGestureRecognizer) {
-        switch sender.state {
-        case .began:
-            self.touchesEnded?(false)
-        case .ended:
-            self.touchesEnded?(true)
-        default:
-            break
-        }
-        
-    }
-}
-
-extension TimelineView: SPRulerDelegate {
-    func spRulerDidScroll(_ rulerScrollView: UIScrollView) {
-        
-        let offset = rulerScrollView.contentOffset
-        let contentInset = rulerScrollView.contentInset
+    private func paginate(scrollView: UIScrollView) {
+        let offset = scrollView.contentOffset
+        let contentInset = scrollView.contentInset
         let index: Int
         let itemsCount = self.rulerView.collectionView.numberOfItems(inSection: 0) - 1
         if self.rulerView.configuration.isHorizontal {
@@ -255,9 +240,11 @@ extension TimelineView: SPRulerDelegate {
         if index == self.rulerView.configuration.metrics.minimumValue {
             paginateBackward()
         }
-        
-        let centerX = rulerScrollView.frame.width / 2
-        let x = (rulerScrollView.contentOffset.x + (centerX)) // / scale
+    }
+    
+    private func updateCurrentTime(scrollView: UIScrollView) {
+        let centerX = scrollView.frame.width / 2
+        let x = (scrollView.contentOffset.x + (centerX)) // / scale
         let timelineCellHalfWidth:CGFloat = (self.lineSpacing + 1) / 2
         let tickHalfDurationInSeconds = CGFloat(self.tickDuration) / CGFloat(2)
         let k = (timelineCellHalfWidth) / CGFloat(tickHalfDurationInSeconds)
@@ -266,6 +253,25 @@ extension TimelineView: SPRulerDelegate {
         let date = Int64(self.startTime) + miliSeconds
         currentTimeLabel.text = date.toDayTimelineCurrentTime()
         self.currentTime?(date)
+    }
+    
+    @objc private func didPan(_ sender: UIPanGestureRecognizer) {
+        switch sender.state {
+        case .began:
+            self.touchesEnded?(false)
+        case .ended:
+            self.touchesEnded?(true)
+        default:
+            break
+        }
+        
+    }
+}
+
+extension TimelineView: SPRulerDelegate {
+    func spRulerDidScroll(_ rulerScrollView: UIScrollView) {
+        paginate(scrollView: rulerScrollView)
+        updateCurrentTime(scrollView: rulerScrollView)
     }
     
     func spRuler(_ ruler: SPRuler, didSelectItemAtIndex index: Int) {
