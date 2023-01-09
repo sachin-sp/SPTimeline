@@ -27,7 +27,7 @@ class TimelineView: UIView {
     
     private var rulerView = TimelineRuler()
     
-    private var timelineSpan: TimelineSpan = .seconds
+    private var timelineSpan: TimelineSpan = .minutes
     
     private var startTime = 0
     private var endTime = 0
@@ -530,6 +530,166 @@ extension Date {
     init(milliseconds:Int64) {
         self = Date(timeIntervalSince1970: TimeInterval(milliseconds) / 1000)
     }
+}
+
+extension DateComponents {
+    /** returns the current date plus the receiver's interval */
+    var fromNow: Date {
+        let cal = Calendar.current
+        return cal.date(byAdding: self, to: Date()) ?? Date()
+    }
+    
+    /** returns the current date minus the receiver's interval */
+    var ago: Date {
+        let cal = Calendar.current
+        return cal.date(byAdding: -self, to: Date()) ?? Date()
+    }
+    
+    func from(date: Date) -> Date {
+        let cal = Calendar.current
+        return cal.date(byAdding: self, to: date) ?? Date()
+    }
+    
+    func ago(date: Date) -> Date {
+        let cal = Calendar.current
+        return cal.date(byAdding: -self, to: date) ?? Date()
+    }
+}
+
+/** helper method to DRY the code a little, adds or subtracts two sets of date components */
+func combineComponents(left: DateComponents,
+                       right: DateComponents,
+                       multiplier: Int) -> DateComponents
+{
+    var comps = DateComponents()
+    comps.second = ((left.second != NSDateComponentUndefined ? left.second ?? 0 : 0) +
+                    (right.second != NSDateComponentUndefined ? right.second ?? 0 : 0) * multiplier)
+    comps.minute = ((left.minute != NSDateComponentUndefined ? left.minute ?? 0 : 0) +
+                    (right.minute != NSDateComponentUndefined ? right.minute ?? 0 : 0) * multiplier)
+    comps.hour = ((left.hour != NSDateComponentUndefined ? left.hour ?? 0 : 0) +
+                  (right.hour != NSDateComponentUndefined ? right.hour ?? 0 : 0) * multiplier)
+    comps.day = ((left.day != NSDateComponentUndefined ? left.day ?? 0 : 0) +
+                 (right.day != NSDateComponentUndefined ? right.day ?? 0 : 0) * multiplier)
+    comps.month = ((left.month != NSDateComponentUndefined ? left.month ?? 0 : 0) +
+                   (right.month != NSDateComponentUndefined ? right.month ?? 0 : 0) * multiplier)
+    comps.year = ((left.year != NSDateComponentUndefined ? left.year ?? 0 : 0) +
+                  (right.year != NSDateComponentUndefined ? right.year ?? 0 : 0))
+    return comps
+}
+
+/** adds the two sets of date components */
+func +(left: DateComponents, right: DateComponents) -> DateComponents {
+    return combineComponents(left: left, right: right, multiplier: 1)
+}
+
+/** subtracts the two sets of date components */
+func -(left: DateComponents, right: DateComponents) -> DateComponents {
+    return combineComponents(left: left, right: right, multiplier: -1)
+}
+
+/** negates the two sets of date components */
+prefix func -(comps: DateComponents) -> DateComponents {
+    var result = DateComponents()
+    if(comps.second != NSDateComponentUndefined) { result.second = -(comps.second ?? 0) }
+    if(comps.minute != NSDateComponentUndefined) { result.minute = -(comps.minute ?? 0) }
+    if(comps.hour != NSDateComponentUndefined) { result.hour = -(comps.hour ?? 0) }
+    if(comps.day != NSDateComponentUndefined) { result.day = -(comps.day ?? 0) }
+    if(comps.month != NSDateComponentUndefined) { result.month = -(comps.month ?? 0) }
+    if(comps.year != NSDateComponentUndefined) { result.year = -(comps.year ?? 0) }
+    return result
+}
+
+
+extension Int {
+    
+    var seconds: DateComponents {
+        var comps = DateComponents()
+        comps.second = self;
+        return comps
+    }
+    
+    var minutes: DateComponents {
+        var comps = DateComponents()
+        comps.minute = self;
+        return comps
+    }
+    
+    var hours: DateComponents {
+        var comps = DateComponents()
+        comps.hour = self;
+        return comps
+    }
+    
+    var days: DateComponents {
+        var comps = DateComponents()
+        comps.day = self;
+        return comps
+    }
+    
+    var weeks: DateComponents {
+        var comps = DateComponents()
+        comps.day = 7 * self;
+        return comps
+    }
+    
+    var months: DateComponents {
+        var comps = DateComponents()
+        comps.month = self;
+        return comps
+    }
+    
+    var years: DateComponents {
+        var comps = DateComponents()
+        comps.year = self;
+        return comps
+    }
+    
+}
+
+extension Int64 {
+    
+    var seconds: DateComponents {
+        var comps = DateComponents()
+        comps.second = Int(self);
+        return comps
+    }
+    
+    var minutes: DateComponents {
+        var comps = DateComponents()
+        comps.minute = Int(self);
+        return comps
+    }
+    
+    var hours: DateComponents {
+        var comps = DateComponents()
+        comps.hour = Int(self);
+        return comps
+    }
+    
+    var days: DateComponents {
+        var comps = DateComponents()
+        comps.day = Int(self);
+        return comps
+    }
+    
+    var weeks: DateComponents {
+        var comps = DateComponents()
+        comps.day = 7 * Int(self);
+        return comps
+    }
+    
+    var months: DateComponents {
+        var comps = DateComponents()
+        comps.month = Int(self);
+        return comps
+    }
+    
+    var years: DateComponents {
+        var comps = DateComponents()
+        comps.year = Int(self);
+        return comps
+    }
+    
 }
 
 // MARK: UTC(GMT) to Local & Local to UTC(GMT)
