@@ -7,7 +7,13 @@
 
 import UIKit
 
+protocol TimelineRulerDataSource: SPRulerDataSource {
+    func timeline(_ ruler: TimelineRuler, timelineData index: Int) -> TimelineData?
+}
+
 class TimelineRuler: SPRuler {
+    
+    weak var timelineDataSource: TimelineRulerDataSource?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -50,11 +56,15 @@ class TimelineRuler: SPRuler {
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TimelineCell.cellId, for: indexPath) as! TimelineCell // swiftlint:disable:this force_cast
-        let text = dataSource?.spRuler(self, titleForIndex: indexPath.row)
-        let rulerLineNumberSetup: RulerLineNumberSetup = (font: font, text: text)
-        cell.configure(indexPath.row,
-                       using: configuration,
-                       rulerLineNumberSetup: rulerLineNumberSetup)
+        let timelineData = timelineDataSource?.timeline(self, timelineData: indexPath.row)
+        let timelineCellSetup: TimelineCellSetup = (font: font, timelineData: timelineData)
+        cell.timelineRulerCellSetup(indexPath.row, using: configuration, timelineCellSetup: timelineCellSetup)
         return cell
     }
+}
+
+struct TimelineData: Codable {
+    let time: Int
+    let startTime: Int
+    let title: String
 }

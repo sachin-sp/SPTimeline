@@ -36,9 +36,12 @@ class TimelineView: UIView {
     var lineSpacing: CGFloat = 20
     var divisions = 0
     
-    var minValue = 0
+    var minimumValue = 0
     var defaultValue = 0
-    var maxValue = 0
+    var maximumValue = 0
+    
+    var currentTime: ((Int64) -> Void)?
+    var touchesEnded: ((Bool) -> Void)?
     
     private lazy var centerLineIndicator: UIView = {
         let v = UIView()
@@ -48,7 +51,7 @@ class TimelineView: UIView {
         return v
     }()
     
-    private lazy var currentTime: UILabel = {
+    private lazy var currentTimeLabel: UILabel = {
         let label = UILabel()
         label.textAlignment = .center
         label.textColor = .white
@@ -73,16 +76,23 @@ class TimelineView: UIView {
         setupCurrentTimeLabel()
         setupRuler()
         setupCenterLineIndicatorLabel()
+        addPanGesture()
+    }
+    
+    private func addPanGesture() {
+        let panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(didPan(_:)))
+        panGestureRecognizer.delegate = self
+        rulerView.collectionView.addGestureRecognizer(panGestureRecognizer)
     }
     
     func setupCurrentTimeLabel() {
-        addSubview(currentTime)
+        addSubview(currentTimeLabel)
         
         NSLayoutConstraint.activate([
-            currentTime.topAnchor.constraint(equalTo: topAnchor, constant: 8),
-            currentTime.leftAnchor.constraint(equalTo: leftAnchor),
-            currentTime.rightAnchor.constraint(equalTo: rightAnchor),
-            currentTime.heightAnchor.constraint(equalToConstant: 25)
+            currentTimeLabel.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+            currentTimeLabel.leftAnchor.constraint(equalTo: leftAnchor),
+            currentTimeLabel.rightAnchor.constraint(equalTo: rightAnchor),
+            currentTimeLabel.heightAnchor.constraint(equalToConstant: 25)
         ])
     }
     
@@ -91,7 +101,7 @@ class TimelineView: UIView {
         rulerView.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
-            rulerView.topAnchor.constraint(equalTo: currentTime.bottomAnchor, constant: 10),
+            rulerView.topAnchor.constraint(equalTo: currentTimeLabel.bottomAnchor, constant: 10),
             rulerView.leftAnchor.constraint(equalTo: leftAnchor),
             rulerView.rightAnchor.constraint(equalTo: rightAnchor),
             rulerView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8)
@@ -102,6 +112,7 @@ class TimelineView: UIView {
         rulerView.font = UIFont(name: "AmericanTypewriter-Bold", size: 12)!
         rulerView.highlightFont = UIFont(name: "AmericanTypewriter-Bold", size: 18)!
         rulerView.dataSource = self
+        rulerView.timelineDataSource = self
         rulerView.delegate = self
     }
     
@@ -134,8 +145,8 @@ class TimelineView: UIView {
         let endDate = Date.init(milliseconds: Int64(self.endTime)).toLocalTime()
         let elapsed = endDate.timeIntervalSince(startDate)
         let tick = Int(self.tickDuration)
-        self.maxValue = Int(Int(elapsed) / tick)
-        self.defaultValue = (self.maxValue)
+        self.maximumValue = Int(Int(elapsed) / tick)
+        self.defaultValue = (self.maximumValue)
         
         switch self.timelineSpan {
         case .seconds:
@@ -146,68 +157,80 @@ class TimelineView: UIView {
             self.defaultValue += 12
         }
         
-        self.minValue = 0
-        rulerView.setupRuler(minimumValue: self.minValue,
+        self.minimumValue = 0
+        rulerView.setupRuler(minimumValue: self.minimumValue,
                              defaultValue: self.defaultValue,
-                             maximumValue: self.maxValue,
+                             maximumValue: self.maximumValue,
                              divisions: self.divisions,
                              lineSpacing: self.lineSpacing)
     }
     
-    func pagingateForward() {
-        let newDefaultValue = self.maxValue
+    func paginateForward() {
+        let newDefaultValue = self.maximumValue
         
-        var e = 0
+        var newEndDate = 0
         
         switch self.timelineSpan {
         case .seconds:
-            e = self.endTime + (5 * Int(secondsInAMinute)).toMiliSeconds()
+            newEndDate = self.endTime + (30 * Int(secondsInAMinute)).toMiliSeconds()
         case .minutes:
-            e = self.endTime + (5 * Int(secondsInAMinute)).toMiliSeconds()
+            newEndDate = self.endTime + (3 * Int(secondsInAnHour)).toMiliSeconds()
         case .days:
-            e = self.endTime + (30 * Int(secondsInADay)).toMiliSeconds()
+            newEndDate = self.endTime + (30 * Int(secondsInADay)).toMiliSeconds()
         }
         
-        self.endTime = e
+        self.endTime = newEndDate
         
         let startDate = Date.init(milliseconds: Int64(self.startTime)).toLocalTime()
         let endDate = Date.init(milliseconds: Int64(self.endTime)).toLocalTime()
         let elapsed = endDate.timeIntervalSince(startDate)
         let tick = Int(self.tickDuration)
-        self.maxValue = Int(Int(elapsed) / tick)
+        self.maximumValue = Int(Int(elapsed) / tick)
         
-        rulerView.setupRuler(minimumValue: self.minValue,
+        rulerView.setupRuler(minimumValue: self.minimumValue,
                              defaultValue: newDefaultValue,
-                             maximumValue: self.maxValue,
+                             maximumValue: self.maximumValue,
                              divisions: self.divisions,
                              lineSpacing: self.lineSpacing)
     }
     
-    func paginateReverse() {
-        var s = 0
+    func paginateBackward() {
+        var newStartTime = 0
         
         switch self.timelineSpan {
         case .seconds:
-            s = self.startTime - (5 * Int(secondsInAMinute)).toMiliSeconds()
+            newStartTime = self.startTime - (30 * Int(secondsInAMinute)).toMiliSeconds()
         case .minutes:
-            s = self.startTime - (5 * Int(secondsInAMinute)).toMiliSeconds()
+            newStartTime = self.startTime - (3 * Int(secondsInAnHour)).toMiliSeconds()
         case .days:
-            s = self.startTime - (30 * Int(secondsInADay)).toMiliSeconds()
+            newStartTime = self.startTime - (30 * Int(secondsInADay)).toMiliSeconds()
         }
         
-        self.startTime = s
+        self.startTime = newStartTime
         
         let startDate = Date.init(milliseconds: Int64(self.startTime)).toLocalTime()
         let endDate = Date.init(milliseconds: Int64(self.endTime)).toLocalTime()
         let elapsed = endDate.timeIntervalSince(startDate)
         let tick = Int(self.tickDuration)
-        self.maxValue = Int(Int(elapsed) / tick)
+        self.maximumValue = Int(Int(elapsed) / tick)
         
-        rulerView.setupRuler(minimumValue: self.minValue,
+        rulerView.setupRuler(minimumValue: self.minimumValue,
                              defaultValue: self.defaultValue,
-                             maximumValue: self.maxValue,
+                             maximumValue: self.maximumValue,
                              divisions: self.divisions,
                              lineSpacing: self.lineSpacing)
+    }
+    
+    @objc private func didPan(_ sender: UIPanGestureRecognizer) {
+        switch sender.state {
+        case .began:
+            self.touchesEnded?(false)
+        case .ended:
+            self.touchesEnded?(true)
+        default:
+            break
+        }
+        
     }
 }
 
@@ -227,10 +250,10 @@ extension TimelineView: SPRulerDelegate {
         }
         
         if index == self.rulerView.configuration.metrics.maximumValue {
-            pagingateForward()
+            paginateForward()
         }
         if index == self.rulerView.configuration.metrics.minimumValue {
-            paginateReverse()
+            paginateBackward()
         }
         
         let centerX = rulerScrollView.frame.width / 2
@@ -241,11 +264,12 @@ extension TimelineView: SPRulerDelegate {
         let secondsInt = Int(x/k)
         let miliSeconds = Int64(secondsInt).toMiliSeconds()
         let date = Int64(self.startTime) + miliSeconds
-        currentTime.text = date.toDayTimelineCurrentTime()
+        currentTimeLabel.text = date.toDayTimelineCurrentTime()
+        self.currentTime?(date)
     }
     
     func spRuler(_ ruler: SPRuler, didSelectItemAtIndex index: Int) {
-        currentTime.text = spRuler(ruler, highlightTitleForIndex: index)
+        currentTimeLabel.text = spRuler(ruler, highlightTitleForIndex: index)
     }
 }
 
@@ -273,8 +297,41 @@ extension TimelineView: SPRulerDataSource {
         let time = (index * tick + Int(self.startTime)).toMiliSeconds()
         let minSec = Int64(time).toDayTimelineCurrentTime()
         let text = minSec
-        currentTime.text = text
+        currentTimeLabel.text = text
         return text
+    }
+}
+
+extension TimelineView: TimelineRulerDataSource {
+    func timeline(_ ruler: TimelineRuler, timelineData index: Int) -> TimelineData? {
+        let tick = Int(self.tickDuration).toMiliSeconds()
+        let time = (index * tick + Int(self.startTime))
+        var timeString = ""
+        
+        switch self.timelineSpan {
+        case .seconds:
+            timeString = Int64(time).toSecondsString()
+        case .minutes:
+            timeString = Int64(time).toMinutesSeconds()
+        case .days:
+            timeString = Int64(time).toDayTimelineDay()
+        }
+        
+        return TimelineData(time: time, startTime: self.startTime, title: timeString)
+    }
+}
+
+extension TimelineView: UIGestureRecognizerDelegate {
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
+    }
+    
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive event: UIEvent) -> Bool {
+        return true
+    }
+    
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
     }
 }
 

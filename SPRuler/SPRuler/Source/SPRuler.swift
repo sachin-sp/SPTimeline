@@ -354,7 +354,7 @@ extension SPRuler: UIScrollViewDelegate {
     }
     
     public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-        if #available(iOS 10.0, *), configuration.isHapticsEnabled {
+        if #available(iOS 10.0, *), configuration.isHapticsEnabled, configuration.isPrecisionScrollEnabled {
             feedbackGenerator = UISelectionFeedbackGenerator()
             feedbackGenerator?.prepare()
         }
@@ -373,7 +373,7 @@ extension SPRuler: UIScrollViewDelegate {
             index = max(0, min(itemsCount, Int(roundedIndex)))
         }
         if highlightedIndex != index {
-            if #available(iOS 10.0, *), configuration.isHapticsEnabled {
+            if #available(iOS 10.0, *), configuration.isHapticsEnabled, configuration.isPrecisionScrollEnabled {
                 feedbackGenerator?.selectionChanged()
                 feedbackGenerator?.prepare()
             }

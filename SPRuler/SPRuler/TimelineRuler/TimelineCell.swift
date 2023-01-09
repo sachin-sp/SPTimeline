@@ -7,6 +7,7 @@
 
 import UIKit
 
+typealias TimelineCellSetup = (font: UIFont?, timelineData: TimelineData?)
 class TimelineCell: SPRulerLineCell {
     
     static var cellId: String {
@@ -81,8 +82,8 @@ class TimelineCell: SPRulerLineCell {
         
         self.eventView.widthAnchor.constraint(equalToConstant: 6).isActive = true
         self.eventView.heightAnchor.constraint(equalToConstant: 6).isActive = true
-        self.eventView.centerYAnchor.constraint(equalTo: centerYAnchor, constant: 0).isActive = true
-        self.eventView.leftAnchor.constraint(equalTo: lineView.rightAnchor, constant: 0).isActive = true
+        self.eventView.centerYAnchor.constraint(equalTo: lineView.centerYAnchor, constant: 0).isActive = true
+        self.eventView.leftAnchor.constraint(equalTo: lineView.rightAnchor, constant: 5).isActive = true
         
         self.grayBackgroundView.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 4).isActive = true
         self.grayBackgroundView.leftAnchor.constraint(equalTo: leftAnchor, constant: 0).isActive = true
@@ -93,15 +94,20 @@ class TimelineCell: SPRulerLineCell {
         
     }
     
-    override func configure(_ index: Int, using config: SPRulerConfiguration, rulerLineNumberSetup: RulerLineNumberSetup) {
-        setupLineNumber(rulerLineNumberSetup: rulerLineNumberSetup)
+    func timelineRulerCellSetup(_ index: Int, using config: SPRulerConfiguration, timelineCellSetup: TimelineCellSetup) {
+        let rulerLineNumberSetup: RulerLineNumberSetup = (font: timelineCellSetup.font, text: timelineCellSetup.timelineData?.title)
         lineHeight = LineHeight(index: index, divisions: config.metrics.divisions, midDivision: config.metrics.midDivision)
+        setupLineNumber(rulerLineNumberSetup: rulerLineNumberSetup, lineHeight: lineHeight)
         updateHeight(for: lineHeight, config: config)
     }
     
-    private func setupLineNumber(rulerLineNumberSetup: RulerLineNumberSetup) {
-        timeLabel.font = rulerLineNumberSetup.font
-        timeLabel.text = rulerLineNumberSetup.text
+    private func setupLineNumber(rulerLineNumberSetup: RulerLineNumberSetup, lineHeight: LineHeight) {
+        if lineHeight == .full {
+            timeLabel.font = rulerLineNumberSetup.font
+            timeLabel.text = rulerLineNumberSetup.text
+        } else {
+            timeLabel.text = ""
+        }
     }
     
     private func updateHeight(for type: LineHeight, config: SPRulerConfiguration) {

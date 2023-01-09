@@ -10,15 +10,15 @@ import UIKit
 class ViewController: UIViewController {
     
     var timelineView: TimelineView!
-    var startTime = 1669833000000
-    var endTime = 1672338600000
+    var startTime = 1672338600000
+    var endTime = 1672349400000
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTimelineView()
     }
     
     func setupTimelineView() {
-        self.timelineView = TimelineView(startTime: startTime, endTime: endTime, timelineSpan: .days)
+        self.timelineView = TimelineView(startTime: startTime, endTime: endTime, timelineSpan: .minutes)
         view.addSubview(timelineView)
         timelineView.translatesAutoresizingMaskIntoConstraints = false
         timelineView.layer.cornerRadius = 12
